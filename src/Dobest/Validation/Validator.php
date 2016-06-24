@@ -19,7 +19,7 @@ class Validator {
             foreach (explode('|', $rule) as $item) {
                 $detial = explode(':', $item);
                 if ( count( $detial ) > 1 ) {
-                    $reason = $this->$detial[0]($this->data[$attribute], $detial[1]);
+					$reason = $this->{$detial[0]}($this->data[$attribute], $detial[1]);
                 } else {
                     $reason = $this->$item($this->data[$attribute]);
                 }
