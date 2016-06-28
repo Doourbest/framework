@@ -1,0 +1,10 @@
+<phpunit bootstrap="vendor/autoload.php">
+	<testsuites>
+		<testsuite name="view">
+			<directory>tests/View</directory>
+		</testsuite>
+	</testsuites>
+	<php>
+		<const name="foo" value="bar"/>
+	</php>
+</phpunit>
