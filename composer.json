@@ -6,6 +6,9 @@
     "php": ">=5.4.0",
 	"twig/twig": "*"
   },
+  "require-dev": {
+	"phpunit/phpunit": "5.4.*"
+  },
   "authors": [
     {
       "name": "xiaojinhua",

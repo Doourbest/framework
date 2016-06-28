@@ -29,7 +29,7 @@ class View {
         } else if( is_file($pathNoExt.'.twig') ) {
             $loader = new \Twig_Loader_Filesystem(VIEW_BASE_PATH);
             $twig = new \Twig_Environment($loader, array(
-                'cache' => BASE_PATH.'/cache',
+                'cache' => CACHE_BASE_PATH . '/twig/',
                 'auto_reload' => true,
             ));
             return new View($twig->loadTemplate($templateName . ".twig"),4);
