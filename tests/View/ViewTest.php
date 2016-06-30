@@ -17,7 +17,7 @@ class ViewTest extends TestCase
         $view->with("user",$user);
         Dobest\View\View::process($view);
         $assertStr = "Hello, This is a $name. user.name={$user['name']}, enjoy!\n";
-        $this->assertEquals($assertStr, ob_get_clean());
+        $this->assertEquals($assertStr, str_replace("\r","\n",str_replace("\r\n","\n",ob_get_clean())));
     }
 
     public function testTwigView()
@@ -30,7 +30,7 @@ class ViewTest extends TestCase
         $view->with("user",$user);
         Dobest\View\View::process($view);
         $assertStr = "Hello, This is a $name. user.name={$user['name']}, enjoy!\n";
-        $this->assertEquals($assertStr, ob_get_clean());
+        $this->assertEquals($assertStr, str_replace("\r","\n",str_replace("\r\n","\n",ob_get_clean())));
     }
 }
 
