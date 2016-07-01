@@ -1,8 +1,5 @@
 <?php
 
-define(VIEW_BASE_PATH,__DIR__);
-define(CACHE_BASE_PATH,__DIR__);
-
 use PHPUnit\Framework\TestCase;
 
 class ViewTest extends TestCase
