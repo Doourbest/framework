@@ -26,7 +26,7 @@ class View {
         $pathNoExt = VIEW_BASE_PATH . '/' . $templateName;
         if ( is_file($pathNoExt.'.php') ) {
             return new View($pathNoExt.'.php',3);
-        } else if( is_file($pathNoExt.'.twig') ) {
+        } else if( is_file($pathNoExt.'.twig') || is_file($pathNoExt.'.twig.html')  ) {
             $loader = new \Twig_Loader_Filesystem(VIEW_BASE_PATH);
             $twig = new \Twig_Environment($loader, array(
                 'cache' => CACHE_BASE_PATH . '/twig/',
