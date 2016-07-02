@@ -8,7 +8,7 @@ class ViewTest extends TestCase {
         ob_start();
         $name = "Template engine.";
         $user = array("name"=>"roxma");
-        $view = Dobest\View\View::make("phptemplate");
+        $view = Dobest\View\View::make("phptemplate.php");
         $view->with("name",$name);
         $view->with("user",$user);
         Dobest\View\View::process($view);
@@ -20,7 +20,7 @@ class ViewTest extends TestCase {
         ob_start();
         $name = "Template engine.";
         $user = array("name"=>"roxma");
-        $view = Dobest\View\View::make("twigtemplate");
+        $view = Dobest\View\View::make("twigtemplate.twig.php");
         $view->with("name",$name);
         $view->with("user",$user);
         Dobest\View\View::process($view);
@@ -53,5 +53,15 @@ class ViewTest extends TestCase {
 
         $this->assertEquals("begin[ Hello world!!! My name is roxma!\n ]end\n", "$result");
     }
+
+    public function testFrameworkBladeView() {
+        ob_start();
+        $view = \Dobest\View\View::make("bladetemplate");
+        $view->with('name','rox');
+        \Dobest\View\View::process($view);
+        $assertStr = "begin[ Hello world!!! My name is rox!\n ]end\n";
+        $this->assertEquals($assertStr, str_replace("\r","\n",str_replace("\r\n","\n",ob_get_clean())));
+    }
+
 }
 
