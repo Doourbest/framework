@@ -1,10 +1,17 @@
 <phpunit bootstrap="vendor/autoload.php">
 	<testsuites>
+
+		<testsuite name="route">
+			<directory>tests/Routing</directory>
+		</testsuite>
+
 		<testsuite name="view">
 			<directory>tests/View</directory>
 		</testsuite>
+
 	</testsuites>
 	<php>
-		<const name="foo" value="bar"/>
+		<const name="VIEW_BASE_PATH" value="tests/View" />
+		<const name="CACHE_BASE_PATH" value="tests/View" />
 	</php>
 </phpunit>

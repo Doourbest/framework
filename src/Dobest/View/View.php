@@ -7,12 +7,18 @@ class View {
     // 2 - jsonp ?
     // 3 - php
     // 4 - twig
+    // 5 - blade
     public $type;
     public function __construct($view,$type)
     {
         $this->view = $view;
         $this->type = $type;
     }
+
+    private static function stringEndsWith($whole, $end) {
+            return (strpos($whole, $end, strlen($whole) - strlen($end)) !== false);
+    }
+
     public static function make($viewName = null)
     {
         if ( !defined('VIEW_BASE_PATH') ) {
@@ -22,22 +28,34 @@ class View {
             throw new \InvalidArgumentException("View name can not be empty!");
         }
 
-        $templateName = str_replace('.', '/', $viewName);
-        $pathNoExt = VIEW_BASE_PATH . '/' . $templateName;
-        if ( is_file($pathNoExt.'.php') ) {
-            return new View($pathNoExt.'.php',3);
-        } else if( is_file($pathNoExt.'.twig') ) {
+        $viewPath = VIEW_BASE_PATH . '/' . $viewName;
+        $isFile   = is_file($viewPath);
+
+        if (is_file($viewPath . '.blade.php')) {
+            $files    = new \Illuminate\Filesystem\Filesystem();                     // singleton
+            $blade    = new \Illuminate\View\Compilers\BladeCompiler($files, CACHE_BASE_PATH); // singleton
+            $finder   = new \Illuminate\View\FileViewFinder($files,array(VIEW_BASE_PATH));
+            $events   = new \Illuminate\Events\Dispatcher(); // container ? what the hell!??
+            $resolver = new \Illuminate\View\Engines\EngineResolver();
+            $resolver->register('blade', function () use ($blade) {
+                return new \Illuminate\View\Engines\CompilerEngine($blade);
+            }); 
+            $factory    = new \Illuminate\View\Factory($resolver, $finder, $events);
+            return new View($factory->make($viewName),5);
+        } else if( $isFile && self::stringEndsWith($viewPath,'.twig.php') ) {
             $loader = new \Twig_Loader_Filesystem(VIEW_BASE_PATH);
             $twig = new \Twig_Environment($loader, array(
                 'cache' => CACHE_BASE_PATH . '/twig/',
                 'auto_reload' => true,
             ));
-            return new View($twig->loadTemplate($templateName . ".twig"),4);
+            return new View($twig->loadTemplate($viewName),4);
+        } else if ( $isFile && self::stringEndsWith($viewPath,'.php') ) {
+            return new View($viewPath,3);
         } else {
             throw new \UnexpectedValueException("View file does not exist!");
         }
-
     }
+
     public static function json($arr)
     {
         if ( !is_array($arr) ) {
@@ -62,6 +80,8 @@ class View {
                 require $view->view;
             } else if ($view->type==4) { // twig
                 echo $view->view->render($view->data);
+            } else if ($view->type==5) { // blade
+                echo $view->view->with($view->data)->render();
             }
         }
     }

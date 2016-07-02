@@ -1,0 +1,1 @@
+begin[ @yield('content') ]end
