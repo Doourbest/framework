@@ -12,7 +12,8 @@ class AppBootstrap{
         spl_autoload_register(function($class) {
 
             if(self::startsWith($class,"App\\")) {
-                $path = BASE_PATH.DIRECTORY_SEPARATOR.str_replace("\\",DIRECTORY_SEPARATOR,$class).'.php';
+                $tmp = str_replace("\\",DIRECTORY_SEPARATOR,$class);
+                $path = BASE_PATH.DIRECTORY_SEPARATOR.strtolower(dirname($tmp)).DIRECTORY_SEPARATOR.basename($tmp).'.php';
                 if(file_exists($path)) {
                     include $path;
                     return;
@@ -20,7 +21,7 @@ class AppBootstrap{
             }
 
             if(self::endsWith($class,"Controller")) {
-                $path = BASE_PATH.'/App/http/controllers/'.str_replace("\\",DIRECTORY_SEPARATOR,$class).'.php';
+                $path = BASE_PATH.'/app/http/controllers/'.str_replace("\\",DIRECTORY_SEPARATOR,$class).'.php';
                 if(file_exists($path)) {
                     include $path;
                     return;
@@ -28,7 +29,7 @@ class AppBootstrap{
             }
 
             if(self::endsWith($class,"Model")) {
-                $path = BASE_PATH.'/App/http/models/'.str_replace("\\",DIRECTORY_SEPARATOR,$class).'.php';
+                $path = BASE_PATH.'/app/http/models/'.str_replace("\\",DIRECTORY_SEPARATOR,$class).'.php';
                 if(file_exists($path)) {
                     include $path;
                     return;
