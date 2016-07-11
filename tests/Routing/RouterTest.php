@@ -84,6 +84,33 @@ class RouterTest extends TestCase
         $this->assertEquals("oh no 404",$errorMsg);
     }
 
+    public function testFilter() {
+        $a = false;
+        $b = false;
+        $c = false;
+        $d = false;
+        Router::get('/testfilter/bar', function() {});
+        Router::filter(':all', function() use(&$a,&$b,&$c,&$d) {
+            return $a = true;
+        });
+        Router::filter('/testfilter/:all', function()  use(&$a,&$b,&$c,&$d){
+            return $b = true;
+        });
+        Router::filter('/testfilter/bar', function()  use(&$a,&$b,&$c,&$d){
+            return $c = true;
+        });
+        Router::filter('/bar/:all', function()  use(&$a,&$b,&$c,&$d){
+            return $d = true;
+        });
+        $_SERVER['REQUEST_METHOD']  = "GET";
+        $_SERVER['REQUEST_URI'] = "/testfilter/bar";
+        Router::dispatch();
+        $this->assertEquals(true,$a);
+        $this->assertEquals(true,$b);
+        $this->assertEquals(true,$c);
+        $this->assertEquals(false,$d);
+    }
+
     public function testController() {
         Router::get('/test_controller', "TestController@handler");
         $_SERVER['REQUEST_METHOD']  = "GET";
