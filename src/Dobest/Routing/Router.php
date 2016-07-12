@@ -68,7 +68,10 @@ class Router {
         $filterHandlers = array();
         self::getFilterHandlers($filterHandlers);
         foreach($filterHandlers as $handler) {
-            self::callUserHandler($handler);
+            $ret = self::callUserHandler($handler);
+            if($ret===false) {
+                return false;         // 如果返回 false，终止整个 dispatch
+            }
         }
 
         if(self::getMatchHandler($handler, $params)==false) {
@@ -78,8 +81,7 @@ class Router {
                     echo '404';
                 };
             }
-            call_user_func(self::$error_callback);
-            return;
+            return call_user_func(self::$error_callback);
         }
 
         $ret = self::callUserHandler($handler,$params);
