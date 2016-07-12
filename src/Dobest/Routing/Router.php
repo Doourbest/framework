@@ -17,9 +17,9 @@ class Router {
     public static $methods = array();
     public static $callbacks = array();
     public static $patterns = array(
-        ':any' => '([^/]+)',
-        ':num' => '([0-9]+)',
-        ':all' => '(.*)'
+        '(:any)' => '([^/]+)',
+        '(:num)' => '([0-9]+)',
+        '(:all)' => '(.*)'
     );
     public static $error_callback;
 

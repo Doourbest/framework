@@ -59,7 +59,7 @@ class RouterTest extends TestCase
     public function testPattern() {
         $msg = "Hello world, testNotFound";
 
-        Router::get('/test_pattern/:any/:num', function($param1, $param2) {
+        Router::get('/test_pattern/(:any)/(:num)', function($param1, $param2) {
             return array($param1, $param2);
         });
 
@@ -89,18 +89,25 @@ class RouterTest extends TestCase
         $b = false;
         $c = false;
         $d = false;
-        Router::get('/testfilter/bar', function() {});
-        Router::filter(':all', function() use(&$a,&$b,&$c,&$d) {
-            return $a = true;
+        $get = false;
+        Router::get('/testfilter/bar', function() use(&$get) {
+            $get = true;
         });
-        Router::filter('/testfilter/:all', function()  use(&$a,&$b,&$c,&$d){
-            return $b = true;
+        Router::filter('(:all)', function($handler) use(&$a,&$b,&$c,&$d) {
+            $a = true;
+            return $handler();
         });
-        Router::filter('/testfilter/bar', function()  use(&$a,&$b,&$c,&$d){
-            return $c = true;
+        Router::filter('/testfilter/(:all)', function($handler)  use(&$a,&$b,&$c,&$d){
+            $b = true;
+            return $handler();
         });
-        Router::filter('/bar/:all', function()  use(&$a,&$b,&$c,&$d){
-            return $d = true;
+        Router::filter('/testfilter/bar', function($handler)  use(&$a,&$b,&$c,&$d){
+            $c = true;
+            return $handler();
+        });
+        Router::filter('/bar/(:all)', function($handler)  use(&$a,&$b,&$c,&$d){
+            $d = true;
+            return $handler();
         });
         $_SERVER['REQUEST_METHOD']  = "GET";
         $_SERVER['REQUEST_URI'] = "/testfilter/bar";
@@ -109,6 +116,7 @@ class RouterTest extends TestCase
         $this->assertEquals(true,$b);
         $this->assertEquals(true,$c);
         $this->assertEquals(false,$d);
+        $this->assertEquals(true,$get);
     }
 
     public function testController() {
