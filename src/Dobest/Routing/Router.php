@@ -65,14 +65,8 @@ class Router {
 
     public static function dispatch($after = null) {
 
-        $filterHandlers = array();
-        self::getFilterHandlers($filterHandlers);
-        foreach($filterHandlers as $handler) {
-            $ret = self::callUserHandler($handler);
-            if($ret===false) {
-                return;         // 如果返回 false，终止整个 dispatch
-            }
-        }
+        $filters = array();
+        self::getFilterHandlers($filters);
 
         if(self::getMatchHandler($handler, $params)==false) {
             if (!self::$error_callback) {
@@ -81,21 +75,39 @@ class Router {
                     echo '404';
                 };
             }
-            $ret = call_user_func(self::$error_callback);
-        } else { 
-            $ret = self::callUserHandler($handler,$params);
+            $handler = self::$error_callback;
+            $params = array();
         }
+
+        // walk though the filters then finally call the matched handler
+        $index = 0;
+        $len = count($filters);
+        $controller = function() use (&$filters,&$len,&$index,&$controller,&$handler,&$params) {
+            if($index < $len) {
+                return self::callUserHandler($filters[$index++],array($controller));
+            } else if ($index==$len){
+                ++$index;
+                return self::callUserHandler($handler,$params);
+            } else {
+                // error, should not called twice
+                return;
+            }
+        };
+
+        $ret = $controller();
 
         if ($after) {
             $segments = explode('@', $after);
             $afterClassName = $segments[0];
             $afterFunctionName = $segments[1];
             $afterClassName::$afterFunctionName($ret);
+        } else {
+            return $ret;
         }
 
     }
 
-    private static function callUserHandler($handler,$params = array()) {
+    private static function callUserHandler(&$handler,$params = array()) {
         if(!is_object($handler)){
             // format: "ClassName@MethodName"
             $segments = explode('@',$handler);
