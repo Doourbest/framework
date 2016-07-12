@@ -41,7 +41,7 @@ class Config
      * @param  mixed   $default
      * @return mixed
      */
-    public function get($key, $default = null)
+    public static function get($key, $default = null)
     {
         if(self::has($key)){
             return self::$config[$key];
