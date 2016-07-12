@@ -70,7 +70,7 @@ class Router {
         foreach($filterHandlers as $handler) {
             $ret = self::callUserHandler($handler);
             if($ret===false) {
-                return false;         // 如果返回 false，终止整个 dispatch
+                return;         // 如果返回 false，终止整个 dispatch
             }
         }
 
