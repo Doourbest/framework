@@ -81,10 +81,10 @@ class Router {
                     echo '404';
                 };
             }
-            return call_user_func(self::$error_callback);
+            $ret = call_user_func(self::$error_callback);
+        } else { 
+            $ret = self::callUserHandler($handler,$params);
         }
-
-        $ret = self::callUserHandler($handler,$params);
 
         if ($after) {
             $segments = explode('@', $after);
@@ -92,6 +92,7 @@ class Router {
             $afterFunctionName = $segments[1];
             $afterClassName::$afterFunctionName($ret);
         }
+
     }
 
     private static function callUserHandler($handler,$params = array()) {
