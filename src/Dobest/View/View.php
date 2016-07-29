@@ -87,7 +87,11 @@ class View {
     }
     public function with($key, $value = null)
     {
-        $this->data[$key] = $value;
+        if(is_array($key)) {
+            $this->data = array_merge($this->data,$key);
+        } else {
+            $this->data[$key] = $value;
+        }
         return $this;
     }
     public function __call($method, $parameters)
