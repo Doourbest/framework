@@ -13,6 +13,7 @@ class View {
     {
         $this->view = $view;
         $this->type = $type;
+        $this->data = array();
     }
 
     private static function stringEndsWith($whole, $end) {
