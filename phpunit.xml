@@ -9,6 +9,9 @@
 		<testsuite name="appbootstrap">
 			<directory>tests/appbootstrap</directory>
 		</testsuite>
+		<testsuite name="support">
+			<directory>tests/Support</directory>
+		</testsuite>
 	</testsuites>
 	<php>
 		<const name="BASE_PATH" value="tests/appbootstrap" />
