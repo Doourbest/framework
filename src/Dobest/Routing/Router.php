@@ -9,23 +9,28 @@ namespace Dobest\Routing;
  * @method static Router head(string $route, Callable $callback)
  */
 class Router {
+
+    public static $filterRoutes = array();
+    public static $filterCallbacks = array();
+
     public static $routes = array();
     public static $methods = array();
     public static $callbacks = array();
     public static $patterns = array(
-        ':any' => '[^/]+',
-        ':num' => '[0-9]+',
-        ':all' => '.*'
+        '(:any)' => '([^/]+)',
+        '(:num)' => '([0-9]+)',
+        '(:all)' => '(.*)'
     );
     public static $error_callback;
+
     /**
      * add filter for your routes
      */
-    public static function filter($filter, $result) {
-        if ($filter()) {
-            $result();
-        }
+    public static function filter($uri, $callback) {
+        array_push(self::$filterRoutes, $uri);
+        array_push(self::$filterCallbacks, $callback);
     }
+
     /**
      * Defines a route w/ callback and method
      */
@@ -57,112 +62,137 @@ class Router {
     {
         self::$error_callback = $callback;
     }
-    /**
-     * Runs the callback for the given request
-     *
-     * $after: Processor After. It will process the value returned by Controller.
-     * Example: View@process
-     *
-     */
-    public static function dispatch($after=null)
-    {
-        $uri = self::detect_uri();
-        $method = $_SERVER['REQUEST_METHOD'];
-        $searches = array_keys(static::$patterns);
-        $replaces = array_values(static::$patterns);
-        $found_route = false;
-        // check if route is defined without regex
-        if (in_array($uri, self::$routes)) {
-            $route_pos = array_keys(self::$routes, $uri);
-            foreach ($route_pos as $route) {
-                if (self::$methods[$route] == $method) {
-                    $found_route = true;
-                    //if route is not an object
-                    if(!is_object(self::$callbacks[$route])){
-                        //grab all parts based on a / separator
-                        $parts = explode('/',self::$callbacks[$route]);
-                        //collect the last index of the array
-                        $last = end($parts);
-                        //grab the controller name and method call
-                        $segments = explode('@',$last);
-                        //instanitate controller
-                        $controller = new $segments[0]();
-                        //call method
-                        $methodName = $segments[1];
-                        $return = $controller->$methodName();
-                        if ($after) {
-                            $after_segments = explode('@', $after);
-                            $afterClassName = $after_segments[0];
-                            $afterFunctionName = $after_segments[1];
-                            $afterClassName::$afterFunctionName($return);
-                        }
-                    } else {
-                        //call closure
-                        call_user_func(self::$callbacks[$route]);
-                    }
-                }
-            }
-        } else {
-            // check if defined with regex
-            $pos = 0;
-            foreach (self::$routes as $route) {
-                if (strpos($route, ':') !== false) {
-                    $route = str_replace($searches, $replaces, $route);
-                }
-                if (preg_match('#^' . $route . '$#', $uri, $matched)) {
-                    if (self::$methods[$pos] == $method) {
-                        $found_route = true;
-                        array_shift($matched); //remove $matched[0] as [1] is the first parameter.
-                        if(!is_object(self::$callbacks[$pos])){
-                            //grab all parts based on a / separator
-                            $parts = explode('/',self::$callbacks[$pos]);
-                            //collect the last index of the array
-                            $last = end($parts);
-                            //grab the controller name and method call
-                            $segments = explode('@',$last);
-                            //instanitate controller
-                            $controller = new $segments[0]();
-                            //call method and pass any extra parameters to the method
-                            $methodName = $segments[1];
-                            $return = $controller->$methodName(implode(",", $matched));
-                            if ($after) {
-                                $after_segments = explode('@', $after);
-                                $afterClassName = $after_segments[0];
-                                $afterFunctionName = $after_segments[1];
-                                $afterClassName::$afterFunctionName($return);
-                            }
-                        } else {
-                            call_user_func_array(self::$callbacks[$pos], $matched);
-                        }
-                    }
-                }
-            $pos++;
-            }
-        }
-        // run the error callback if the route was not found
-        if ($found_route == false) {
+
+    public static function dispatch($after = null) {
+
+        $filters = array();
+        self::getFilterHandlers($filters);
+
+        if(self::getMatchHandler($handler, $params)==false) {
             if (!self::$error_callback) {
                 self::$error_callback = function() {
                     header($_SERVER['SERVER_PROTOCOL']." 404 Not Found");
                     echo '404';
                 };
             }
-            call_user_func(self::$error_callback);
+            $handler = self::$error_callback;
+            $params = array();
+        }
+
+        // walk though the filters then finally call the matched handler
+        $index = 0;
+        $len = count($filters);
+        $controller = function() use (&$filters,&$len,&$index,&$controller,&$handler,&$params) {
+            if($index < $len) {
+                return self::callUserHandler($filters[$index++],array($controller));
+            } else if ($index==$len){
+                ++$index;
+                return self::callUserHandler($handler,$params);
+            } else {
+                // error, should not called twice
+                return;
+            }
+        };
+
+        $ret = $controller();
+
+        if ($after) {
+            $segments = explode('@', $after);
+            $afterClassName = $segments[0];
+            $afterFunctionName = $segments[1];
+            $afterClassName::$afterFunctionName($ret);
+        } else {
+            return $ret;
+        }
+
+    }
+
+    private static function callUserHandler(&$handler,$params = array()) {
+        if(!is_object($handler)){
+            // format: "ClassName@MethodName"
+            $segments = explode('@',$handler);
+            $obj = new $segments[0]();
+            $methodName = $segments[1];
+            return call_user_func_array(array($obj,$methodName),$params);
+        } else {
+            return call_user_func_array($handler, $params);
         }
     }
+
+    public static function getFilterHandlers(&$handlers) {
+
+        $uri         = self::detect_uri();
+        // check if route is defined without regex
+        if ($routePos = array_keys(self::$filterRoutes, $uri)) {
+            foreach ($routePos as $pos) {
+                $handler = self::$filterCallbacks[$pos];
+                $handlers[] = $handler;
+            }
+        }
+
+        // check if defined with regex
+        $searches = array_keys(static::$patterns);
+        $replaces = array_values(static::$patterns);
+        $cnt = count(self::$filterRoutes);
+        for ($pos = 0; $pos<$cnt; ++$pos) {
+            $route = self::$filterRoutes[$pos];
+            if (strpos($route, ':') === false) {
+                continue; // NOTICE: non regex pattern, this has been checked before
+            }
+            $route = str_replace($searches, $replaces, $route);
+            if (preg_match('#^' . $route . '$#', $uri, $matches)) {
+                array_shift($matches); // $matches[0] will contain the text that matched the full pattern, remove it
+                $handler = self::$filterCallbacks[$pos];
+                $handlers[] = $handler;
+            }
+        }
+
+    }
+
+    private static function getMatchHandler(&$handler, &$params) {
+        $uri         = self::detect_uri();
+        $method      = $_SERVER['REQUEST_METHOD'];
+        // check if route is defined without regex
+        if ($routePos = array_keys(self::$routes, $uri)) {
+            foreach ($routePos as $pos) {
+                if (self::$methods[$pos] == $method) {
+                    $handler = self::$callbacks[$pos];
+                    $params = array();
+                    return true;
+                }
+            }
+        } else {
+            // check if defined with regex
+            $searches = array_keys(static::$patterns);
+            $replaces = array_values(static::$patterns);
+            $cnt = count(self::$routes);
+            for ($pos = 0; $pos<$cnt; ++$pos) {
+                $route = self::$routes[$pos];
+                if (strpos($route, ':') === false) {
+                    continue; // NOTICE: non regex pattern, this has been checked before
+                }
+                $route = str_replace($searches, $replaces, $route);
+                if (preg_match('#^' . $route . '$#', $uri, $matches)) {
+                    if (self::$methods[$pos] == $method) {
+                        array_shift($matches); // $matches[0] will contain the text that matched the full pattern, remove it
+                        $handler = self::$callbacks[$pos];
+                        $params = $matches;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     // detect true URI, inspired by CodeIgniter 2
     private static function detect_uri()
     {
-        $uri = $_SERVER['REQUEST_URI'];
-        if (strpos($uri, $_SERVER['SCRIPT_NAME']) === 0) {
-            $uri = substr($uri, strlen($_SERVER['SCRIPT_NAME']));
-        } elseif (strpos($uri, dirname($_SERVER['SCRIPT_NAME'])) === 0) {
-            $uri = substr($uri, strlen(dirname($_SERVER['SCRIPT_NAME'])));
-        }
-        if ($uri == '/' || empty($uri)) {
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        if ($uri == '' || $uri=='/') {
             return '/';
         }
-        $uri = parse_url($uri, PHP_URL_PATH);
-        return str_replace(array('//', '../'), '/', trim($uri, '/'));
+        return str_replace(array('//', '../'), '/', rtrim($uri, '/'));
+
     }
 }
