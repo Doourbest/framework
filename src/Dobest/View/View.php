@@ -73,6 +73,7 @@ class View {
         }
         if ( $view instanceof View ) {
             if ($view->type == 1) { // json
+                header('Content-type: application/json');
                 echo json_encode($view->view);
             } else if ($view->type==3) { // php
                 if ($view->data) {
