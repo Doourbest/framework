@@ -43,7 +43,7 @@ class View {
             }); 
             $factory    = new \Illuminate\View\Factory($resolver, $finder, $events);
             return new View($factory->make($viewName),5);
-        } else if( $isFile && self::stringEndsWith($viewPath,'.twig.php') ) {
+        } else if( $isFile && (self::stringEndsWith($viewPath,'.twig.php')||self::stringEndsWith($viewPath,'.twig.html')) ) {
             $loader = new \Twig_Loader_Filesystem(VIEW_BASE_PATH);
             $twig = new \Twig_Environment($loader, array(
                 'cache' => CACHE_BASE_PATH . '/twig/',
